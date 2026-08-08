@@ -1,0 +1,181 @@
+DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MarketMate — AI Marketing Assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,700;1,9..144,600&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EFEAE0;
+    --card:#FFFDF8;
+    --ink:#1F2A24;
+    --ink-soft:#5C6A62;
+    --mustard:#C88A1D;
+    --clover:#3E6B4F;
+    --line:#D8D0C0;
+    --error:#B5432F;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Work Sans',sans-serif;}
+  .wrap{max-width:880px;margin:0 auto;padding:44px 24px 90px;}
+  .brand-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:36px;}
+  .brand{font-family:'Fraunces',serif;font-weight:700;font-style:italic;font-size:34px;}
+  .brand .m{color:var(--mustard);}
+  .index-count{font-size:12px;color:var(--ink-soft);font-variant-numeric:tabular-nums;}
+
+  .deck{position:relative;margin-bottom:28px;}
+  .card-index{background:var(--card);border:1px solid var(--line);border-radius:2px;box-shadow:0 1px 0 var(--line), 0 14px 26px -18px rgba(31,42,36,.35);padding:44px 40px;position:relative;}
+  .card-index::before{content:attr(data-tab);position:absolute;top:-13px;left:40px;background:var(--mustard);color:#FFFDF8;font-size:10.5px;font-weight:600;letter-spacing:.08em;padding:5px 12px;border-radius:2px;text-transform:uppercase;}
+  .eyebrow{font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--clover);font-weight:600;margin-bottom:14px;}
+  h1{font-family:'Fraunces',serif;font-weight:700;font-size:32px;margin:0 0 10px;line-height:1.15;}
+  .desc{color:var(--ink-soft);font-size:14.5px;margin-bottom:30px;line-height:1.55;}
+
+  label{display:block;font-size:12.5px;font-weight:600;color:var(--ink-soft);margin-bottom:12px;text-transform:uppercase;letter-spacing:.04em;}
+  textarea,input[type=text]{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:3px;padding:14px 16px;color:var(--ink);font-family:'Work Sans',sans-serif;font-size:14.5px;resize:vertical;}
+  textarea:focus,input:focus{outline:none;border-color:var(--mustard);}
+
+  .card-options{display:flex;flex-wrap:wrap;gap:10px;}
+  .index-card{border:1px solid var(--line);background:var(--bg);border-radius:3px;padding:11px 18px;cursor:pointer;font-size:13.5px;font-weight:500;transition:.12s;}
+  .index-card:hover{border-color:var(--clover);}
+  .index-card.sel{background:var(--clover);border-color:var(--clover);color:#FFFDF8;font-weight:600;}
+
+  .nav-btns{display:flex;justify-content:space-between;margin-top:34px;}
+  button.primary{background:var(--ink);color:var(--card);border:none;padding:14px 28px;border-radius:3px;font-weight:600;font-size:13.5px;cursor:pointer;font-family:'Work Sans',sans-serif;}
+  button.primary:hover{background:var(--clover);}
+  button.ghost{background:transparent;color:var(--ink-soft);border:1px solid var(--line);padding:14px 22px;border-radius:3px;font-weight:500;font-size:13.5px;cursor:pointer;}
+  button:disabled{opacity:.35;cursor:not-allowed;}
+
+  .out-stack{display:flex;flex-direction:column;gap:16px;}
+  .out-card{background:var(--card);border:1px solid var(--line);border-radius:2px;padding:26px 30px;box-shadow:0 10px 20px -16px rgba(31,42,36,.3);}
+  .out-card .v{font-family:'Fraunces',serif;font-style:italic;color:var(--mustard);font-size:14px;margin-bottom:10px;}
+  .out-card p{font-size:15px;line-height:1.65;margin:0 0 14px;}
+  .out-card .tags{color:var(--clover);font-size:13px;margin-bottom:12px;}
+  .out-card .cta{display:inline-block;border-bottom:2px solid var(--mustard);color:var(--ink);font-size:13px;font-weight:600;padding-bottom:2px;}
+
+  .source-note{font-size:12px;color:var(--ink-soft);margin-top:20px;font-style:italic;}
+  .spinner{width:26px;height:26px;border:3px solid var(--line);border-top-color:var(--mustard);border-radius:50%;animation:spin .8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .loading-wrap{display:flex;align-items:center;gap:14px;padding:28px 0;color:var(--ink-soft);font-size:14px;}
+  .error-box{background:#F7E9E5;border:1px solid var(--error);color:var(--error);padding:14px 18px;border-radius:3px;font-size:13.5px;margin-bottom:18px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand-row">
+    <div class="brand">Market<span class="m">Mate</span></div>
+    <div class="index-count" id="indexCount"></div>
+  </div>
+  <div class="deck" id="mainArea"></div>
+</div>
+
+<script>
+const API_ENDPOINT = '/api/generate';
+const steps = [
+  {key:'product', tab:'Step 01', label:'Product / Service', sub:'What are you promoting?'},
+  {key:'audience', tab:'Step 02', label:'Target Audience', sub:'Who is this for?'},
+  {key:'platform', tab:'Step 03', label:'Platform', sub:'Where will it run?'},
+  {key:'content', tab:'Step 04', label:'Content Type', sub:'What format?'},
+  {key:'tone', tab:'Step 05', label:'Tone', sub:'How should it sound?'},
+  {key:'goal', tab:'Step 06', label:'Marketing Goal', sub:'What outcome should it drive?'},
+];
+let current = 0;
+const data = {product:'', audience:'', platform:'', content:'', tone:'', goal:''};
+const audiences = ['Teenagers','Working Women','Young Professionals','Parents','Students','Small Business Owners'];
+const platforms = ['Instagram','Facebook','LinkedIn','Email Marketing'];
+const contentMap = {
+  'Instagram':['Caption','Ad Copy','Promotional Post'],
+  'Facebook':['Post Copy','Ad Copy','Promotional Post'],
+  'LinkedIn':['Post Copy','Article Snippet','Business Announcement'],
+  'Email Marketing':['Promotional Email','Newsletter Email','Product Announcement Email'],
+};
+const tones = ['Professional','Friendly','Persuasive'];
+const goals = ['Increase Sales','Boost Engagement','Build Awareness'];
+
+function canProceed(){ const k=steps[current].key; if(k==='product') return data.product.trim().length>0; return !!data[k]; }
+function cardRow(options,key){ return `<div class="card-options">${options.map(o=>`<div class="index-card ${data[key]===o?'sel':''}" onclick="selectOpt('${key}','${o}')">${o}</div>`).join('')}</div>`; }
+function selectOpt(key,val){ data[key]=val; render(); }
+
+function render(){
+  document.getElementById('indexCount').textContent = `Step ${current+1} of ${steps.length}`;
+  const main = document.getElementById('mainArea');
+  const s = steps[current];
+  let body = '';
+  if(s.key==='product'){
+    body = `<label>Describe your product or service</label>
+      <textarea rows="4" placeholder="e.g. Organic face wash for sensitive skin" oninput="data.product=this.value; refreshBtn()">${data.product}</textarea>`;
+  } else if(s.key==='audience'){ body = `<label>Select your target audience</label>${cardRow(audiences,'audience')}`;
+  } else if(s.key==='platform'){ body = `<label>Choose a platform</label>${cardRow(platforms,'platform')}`;
+  } else if(s.key==='content'){ body = `<label>Content type for ${data.platform||'—'}</label>${cardRow(contentMap[data.platform]||[],'content')}`;
+  } else if(s.key==='tone'){ body = `<label>Desired tone</label>${cardRow(tones,'tone')}`;
+  } else if(s.key==='goal'){ body = `<label>Marketing goal</label>${cardRow(goals,'goal')}`;
+  }
+  main.innerHTML = `
+    <div class="card-index" data-tab="${s.tab}">
+      <div class="eyebrow">Creative Brief</div>
+      <h1>${s.label}</h1>
+      <div class="desc">${s.sub}</div>
+      ${body}
+      <div class="nav-btns">
+        <button class="ghost" onclick="prevStep()" ${current===0?'disabled':''}>← Back</button>
+        <button class="primary" onclick="nextStep()" ${canProceed()?'':'disabled'}>${current===steps.length-1?'Generate Content →':'Continue →'}</button>
+      </div>
+    </div>`;
+}
+function refreshBtn(){ const b=document.querySelector('.nav-btns .primary'); if(b) b.disabled=!canProceed(); }
+function nextStep(){ if(!canProceed())return; if(current===steps.length-1){runGenerate();return;} current++; render(); }
+function prevStep(){ if(current>0){current--; render();} }
+
+function showLoading(){
+  document.getElementById('mainArea').innerHTML = `
+    <div class="card-index" data-tab="Drafting">
+      <div class="eyebrow">Working</div>
+      <h1>Generating three versions</h1>
+      <div class="loading-wrap"><div class="spinner"></div>Drafting copy optimized for ${data.platform}...</div>
+    </div>`;
+}
+async function runGenerate(){
+  showLoading();
+  const payload = {product:data.product,audience:data.audience,platform:data.platform,content_type:data.content,tone:data.tone,goal:data.goal};
+  try{
+    const res = await fetch(API_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    if(!res.ok) throw new Error('Server responded '+res.status);
+    showOutput(await res.json());
+  }catch(err){
+    showError(err.message || 'Something went wrong.');
+  }
+}
+function showError(msg){
+  document.getElementById('mainArea').innerHTML = `
+    <div class="card-index" data-tab="Error">
+      <div class="eyebrow">Error</div>
+      <h1>Couldn't generate content</h1>
+      <div class="error-box">${msg} — the server may be waking up (free-tier cold start). Try again in a few seconds.</div>
+      <div class="nav-btns"><button class="ghost" onclick="current=steps.length-1;render();">← Edit inputs</button><button class="primary" onclick="runGenerate()">Retry ↻</button></div>
+    </div>`;
+}
+function showOutput(result){
+  const versions = result.versions||[];
+  document.getElementById('mainArea').innerHTML = `
+    <div class="card-index" data-tab="Result">
+      <div class="eyebrow">Generated for ${data.platform}</div>
+      <h1>Three directions, ready</h1>
+      <div class="desc">${data.content} · ${data.tone} tone · Goal: ${data.goal}</div>
+      <div class="out-stack">
+        ${versions.map((v,i)=>`
+          <div class="out-card">
+            <div class="v">Version 0${i+1} — ${v.label}</div>
+            <p>${v.body}</p>
+            <div class="tags">${(v.hashtags||[]).join(' ')}</div>
+            <div class="cta">${v.cta}</div>
+          </div>`).join('')}
+      </div>
+      <div class="source-note">Source: ${result.source==='groq'?'Groq / Llama 3.3 70B':'template fallback'}</div>
+      <div class="nav-btns"><button class="ghost" onclick="current=steps.length-1;render();">← Edit inputs</button><button class="primary" onclick="runGenerate()">Regenerate ↻</button></div>
+    </div>`;
+}
+render();
+</script>
+</body>
+</html>
