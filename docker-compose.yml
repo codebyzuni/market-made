@@ -1,0 +1,9 @@
+services:
+  marketmate:
+    build: .
+    container_name: marketmate
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    restart: unless-stopped
